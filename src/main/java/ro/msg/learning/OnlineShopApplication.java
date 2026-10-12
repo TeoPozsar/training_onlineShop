@@ -1,4 +1,4 @@
-package com.onlineshop;
+package ro.msg.learning;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
