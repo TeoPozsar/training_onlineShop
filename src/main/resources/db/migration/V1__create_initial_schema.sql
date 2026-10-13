@@ -32,37 +32,47 @@ CREATE TABLE IF NOT EXISTS users (
     role VARCHAR(50) NOT NULL
 );
 
+CREATE TABLE  address (
+        id UUID PRIMARY KEY,
+        country VARCHAR(255) NOT NULL,
+        city VARCHAR(255) NOT NULL,
+        county VARCHAR(255) NOT NULL,
+        street VARCHAR(255) NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS orders (
     id UUID PRIMARY KEY,
     user_id UUID NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    address_country VARCHAR(255) NOT NULL,
-    address_city VARCHAR(255) NOT NULL,
-    address_county VARCHAR(255) NOT NULL,
-    address_street VARCHAR(255) NOT NULL,
+    address_id UUID NOT NULL,
 
     CONSTRAINT fk_orders_user
         FOREIGN KEY (user_id)
-        REFERENCES users(id)
+        REFERENCES users(id),
+    CONSTRAINT fk_orders_address
+        FOREIGN KEY (address_id)
+        REFERENCES address(id)
 );
 
 CREATE TABLE IF NOT EXISTS location (
     id UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    address_country VARCHAR(255) NOT NULL,
-    address_city VARCHAR(255) NOT NULL,
-    address_county VARCHAR(255) NOT NULL,
-    address_street VARCHAR(255) NOT NULL
+    address_id UUID NOT NULL,
+
+    CONSTRAINT fk_location_address
+        FOREIGN KEY (address_id)
+        REFERENCES address(id)
 );
 
 
 CREATE TABLE IF NOT EXISTS order_details (
-    id UUID PRIMARY KEY,
     order_id UUID NOT NULL,
     product_id UUID NOT NULL,
     shipped_from_location_id UUID NOT NULL,
     quantity INTEGER NOT NULL,
 
+    CONSTRAINT pk_order_details
+        PRIMARY KEY (order_id, product_id),
     CONSTRAINT fk_order_details_order
         FOREIGN KEY (order_id)
         REFERENCES orders(id),
