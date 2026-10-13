@@ -1,11 +1,15 @@
 package ro.msg.learning.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Column;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -24,17 +28,9 @@ public class Location {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "address_country", nullable = false)
-    private String addressCountry;
-
-    @Column(name = "address_city", nullable = false)
-    private String addressCity;
-
-    @Column(name = "address_county", nullable = false)
-    private String addressCounty;
-
-    @Column(name = "address_street", nullable = false)
-    private String addressStreet;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "address_id", nullable = false)
+    private Address address;
 
 }
 
