@@ -1,10 +1,10 @@
-CREATE TABLE product_category (
+CREATE TABLE IF NOT EXISTS product_category (
     id UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT
 );
 
-CREATE TABLE product (
+CREATE TABLE IF NOT EXISTS product (
     id UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
@@ -22,7 +22,7 @@ CREATE TABLE product (
         CHECK (weight >= 0)
 );
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY,
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
@@ -32,7 +32,7 @@ CREATE TABLE users (
     role VARCHAR(50) NOT NULL
 );
 
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
     id UUID PRIMARY KEY,
     user_id UUID NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -46,7 +46,7 @@ CREATE TABLE orders (
         REFERENCES users(id)
 );
 
-CREATE TABLE location (
+CREATE TABLE IF NOT EXISTS location (
     id UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     address_country VARCHAR(255) NOT NULL,
@@ -56,7 +56,7 @@ CREATE TABLE location (
 );
 
 
-CREATE TABLE order_details (
+CREATE TABLE IF NOT EXISTS order_details (
     id UUID PRIMARY KEY,
     order_id UUID NOT NULL,
     product_id UUID NOT NULL,
@@ -76,7 +76,7 @@ CREATE TABLE order_details (
         CHECK (quantity > 0)
 );
 
-CREATE TABLE stock (
+CREATE TABLE IF NOT EXISTS stock (
     product_id UUID NOT NULL,
     location_id UUID NOT NULL,
     quantity INTEGER NOT NULL DEFAULT 0,
