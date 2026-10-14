@@ -1,0 +1,5 @@
+$kind: http-request
+description: ""
+url: http://localhost:8080/api/products/88a25eb2-2de2-4df9-8cdd-ca1542aa305f
+method: DELETE
+order: 5000

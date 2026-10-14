@@ -1,0 +1,5 @@
+$kind: http-request
+description: ""
+url: http://localhost:8080/api/product-categories/eaeaf407-6528-4329-b004-7a355d768f96
+method: GET
+order: 3000
