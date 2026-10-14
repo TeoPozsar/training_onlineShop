@@ -1,0 +1,33 @@
+$kind: http-request
+description: ""
+url: http://localhost:8080/api/products
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "Wireless Mouse",
+      "description": "Ergonomic wireless mouse",
+      "price": 29.99,
+      "weight": 0.15,
+      "imageURL": "https://example.com/mouse.jpg",
+      "categoryId": "7e58d60c-ccdf-4cf7-b23b-b4e8851b3f9f"
+    }
+  $type: "{\r
+
+    \  \"name\": \"Wireless Mouse\",\r
+
+    \  \"description\": \"Ergonomic wireless mouse\",\r
+
+    \  \"price\": 29.99,\r
+
+    \  \"weight\": 0.15,\r
+
+    \  \"imageURL\": \"https://example.com/mouse.jpg\",\r
+
+    \  \"categoryId\": \"7e58d60c-ccdf-4cf7-b23b-b4e8851b3f9f\"\r
+
+    }"
+order: 2000
