@@ -6,11 +6,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import ro.msg.learning.dto.ProductDTO;
-import ro.msg.learning.entity.Product;
-import ro.msg.learning.entity.ProductCategory;
-import ro.msg.learning.exception.ResourceNotFoundException;
-import ro.msg.learning.mapper.ProductMapper;
-import ro.msg.learning.repository.ProductCategoryRepository;
 import ro.msg.learning.service.ProductService;
 
 import java.util.List;
@@ -22,40 +17,24 @@ import java.util.UUID;
 public class ProductController {
 
     private final ProductService productService;
-    private final ProductMapper productMapper;
-    private final ProductCategoryRepository productCategoryRepository;
+
 
     @GetMapping
     public List<ProductDTO> getAllProducts() {
-        return productService.getAll()
-                .stream()
-                .map(productMapper::ProductToDTO)
-                .toList();
+        return productService.getAll();
     }
 
     @GetMapping("/{id}")
     public ProductDTO getProductById(@PathVariable UUID id) {
-        Product product = productService.getById(id);
-        return productMapper.ProductToDTO(product);
+        return productService.getById(id);
     }
 
     @PostMapping
     public ResponseEntity<ProductDTO> createProduct(
             @RequestBody ProductDTO productDto) {
 
-        ProductCategory category = productCategoryRepository
-                .findById(productDto.getCategoryId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Product category not found: " + productDto.getCategoryId()));
-
-        Product product = productMapper.toEntity(productDto, category);
-        product.setId(null);
-
-        Product savedProduct = productService.createProduct(product);
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(productMapper.ProductToDTO(savedProduct));
+        ProductDTO createdProduct = productService.createProduct(productDto);
+        return new ResponseEntity<>(createdProduct, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
@@ -63,16 +42,7 @@ public class ProductController {
             @PathVariable UUID id,
             @RequestBody ProductDTO productDto) {
 
-        ProductCategory category = productCategoryRepository
-                .findById(productDto.getCategoryId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Product category not found: " + productDto.getCategoryId()));
-
-        Product updatedProduct = productMapper.toEntity(productDto, category);
-
-        Product savedProduct = productService.update(id, updatedProduct);
-
-        return productMapper.ProductToDTO(savedProduct);
+        return productService.update(id, productDto);
     }
 
     @DeleteMapping("/{id}")

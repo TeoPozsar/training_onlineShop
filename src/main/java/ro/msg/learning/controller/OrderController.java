@@ -2,6 +2,7 @@ package ro.msg.learning.controller;
 
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,6 +22,6 @@ public class OrderController {
     public ResponseEntity<Order> createOrder(@RequestBody CreateOrderRequest request)
     {
         Order order = orderService.createOrder(request);
-        return ResponseEntity.ok(order);
+        return ResponseEntity.status(HttpStatus.CREATED).body(order);
     }
 }
