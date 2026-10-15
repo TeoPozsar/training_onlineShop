@@ -1,6 +1,8 @@
 package ro.msg.learning.dto;
 
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,8 +20,16 @@ import java.util.UUID;
 @NoArgsConstructor
 public class CreateOrderRequest {
 
+    @NotNull
     private UUID userId;
+
+    @NotNull
     private LocalDateTime timeStamp;
+
+    @NotNull
     private UUID deliveryAddressId;
+
+    @NotNull
+    @Valid
     private List<OrderItemRequest> orderItems;
 }

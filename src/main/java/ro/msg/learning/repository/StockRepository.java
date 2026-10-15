@@ -12,7 +12,9 @@ public interface StockRepository extends JpaRepository<Stock, StockId> {
 
     Optional<Stock> findByProduct_IdAndLocation_Id(UUID productId, UUID locationId);
 
-    List<Stock> findByProduct_IdAndQuantityGreaterThanEqual(UUID productId, int quantity);
+    List<Stock> findByProduct_IdInOrderByLocation_IdAsc(List<UUID> productIds);
 
     Optional<Stock> findByProduct_IdAndLocation_IdAndQuantityGreaterThanEqual(UUID productId, UUID locationId, int quantity);
+
+
 }

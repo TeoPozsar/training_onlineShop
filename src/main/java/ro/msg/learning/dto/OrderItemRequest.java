@@ -1,6 +1,8 @@
 package ro.msg.learning.dto;
 
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,7 +17,11 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class OrderItemRequest {
+
+    @NotNull
     private UUID productId;
+
+    @Positive
     private int quantity;
 
 }

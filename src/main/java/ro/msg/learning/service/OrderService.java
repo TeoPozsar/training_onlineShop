@@ -14,17 +14,13 @@ import ro.msg.learning.entity.Product;
 import ro.msg.learning.entity.Stock;
 import ro.msg.learning.entity.User;
 import ro.msg.learning.repository.AddressRepository;
-import ro.msg.learning.repository.LocationRepository;
 import ro.msg.learning.repository.OrderDetailRepository;
 import ro.msg.learning.repository.OrderRepository;
 import ro.msg.learning.repository.ProductRepository;
 import ro.msg.learning.repository.StockRepository;
 import ro.msg.learning.repository.UserRepository;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -40,38 +36,47 @@ public class OrderService {
     private Location findNearestLocationWithStock(
             Map<UUID, Integer> productQuantities) {
 
-        Map.Entry<UUID, Integer> firstProduct =
-                productQuantities.entrySet().iterator().next();
+        List<UUID> productIds = new ArrayList<>(
+                productQuantities.keySet()
+        );
 
         List<Stock> candidateStocks =
-                stockRepository.findByProduct_IdAndQuantityGreaterThanEqual(
-                        firstProduct.getKey(),
-                        firstProduct.getValue()
+                stockRepository.findByProduct_IdInOrderByLocation_IdAsc(
+                        productIds
                 );
 
-        for (Stock candidateStock : candidateStocks) {
-            Location location = candidateStock.getLocation();
+        Map<UUID, Map<UUID, Stock>> stockByLocation =
+                new LinkedHashMap<>();
+
+        for (Stock stock : candidateStocks) {
+            UUID locationId = stock.getLocation().getId();
+            UUID productId = stock.getProduct().getId();
+
+            stockByLocation
+                    .computeIfAbsent(locationId, id -> new HashMap<>())
+                    .put(productId, stock);
+        }
+
+        for (Map.Entry<UUID, Map<UUID, Stock>> locationEntry
+                : stockByLocation.entrySet()) {
+
+            Map<UUID, Stock> locationStock = locationEntry.getValue();
             boolean canFulfillOrder = true;
 
             for (Map.Entry<UUID, Integer> item
                     : productQuantities.entrySet()) {
 
-                boolean hasEnoughStock = stockRepository
-                        .findByProduct_IdAndLocation_IdAndQuantityGreaterThanEqual(
-                                item.getKey(),
-                                location.getId(),
-                                item.getValue()
-                        )
-                        .isPresent();
+                Stock stock = locationStock.get(item.getKey());
 
-                if (!hasEnoughStock) {
+                if (stock == null
+                        || stock.getQuantity() < item.getValue()) {
                     canFulfillOrder = false;
                     break;
                 }
             }
 
             if (canFulfillOrder) {
-                return location;
+                return locationStock.values().iterator().next().getLocation();
             }
         }
 
@@ -83,35 +88,9 @@ public class OrderService {
     @Transactional
     public Order createOrder(CreateOrderRequest request) {
 
-        // validating the request
-        if (request == null) {
-            throw new IllegalArgumentException(
-                    "Order request cannot be null."
-            );
-        }
-
-        // validating order items before checking the stock
-        if (request.getOrderItems() == null
-                || request.getOrderItems().isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Order items cannot be null or empty."
-            );
-        }
-
         Map<UUID, Integer> productQuantities = new HashMap<>();
 
         for (OrderItemRequest item : request.getOrderItems()) {
-            if (item == null || item.getProductId() == null) {
-                throw new IllegalArgumentException(
-                        "Product ID cannot be null."
-                );
-            }
-
-            if (item.getQuantity() <= 0) {
-                throw new IllegalArgumentException(
-                        "Product quantity must be greater than zero."
-                );
-            }
 
             //adding the quantities of the same product if it appears multiple times in the order
             productQuantities.merge(
