@@ -16,9 +16,10 @@ import ro.msg.learning.entity.User;
 import ro.msg.learning.repository.AddressRepository;
 import ro.msg.learning.repository.OrderDetailRepository;
 import ro.msg.learning.repository.OrderRepository;
-import ro.msg.learning.repository.ProductRepository;
 import ro.msg.learning.repository.StockRepository;
 import ro.msg.learning.repository.UserRepository;
+import ro.msg.learning.service.strategy.OrderStrategy;
+import ro.msg.learning.service.strategy.StockAllocation;
 
 import java.util.*;
 
@@ -27,63 +28,12 @@ import java.util.*;
 public class OrderService {
 
     private final AddressRepository addressRepository;
+    private final OrderStrategy orderStrategy;
     private final OrderDetailRepository orderDetailRepository;
-    private final ProductRepository productRepository;
     private final OrderRepository orderRepository;
     private final StockRepository stockRepository;
     private final UserRepository userRepository;
 
-    private Location findNearestLocationWithStock(
-            Map<UUID, Integer> productQuantities) {
-
-        List<UUID> productIds = new ArrayList<>(
-                productQuantities.keySet()
-        );
-
-        List<Stock> candidateStocks =
-                stockRepository.findByProduct_IdInOrderByLocation_IdAsc(
-                        productIds
-                );
-
-        Map<UUID, Map<UUID, Stock>> stockByLocation =
-                new LinkedHashMap<>();
-
-        for (Stock stock : candidateStocks) {
-            UUID locationId = stock.getLocation().getId();
-            UUID productId = stock.getProduct().getId();
-
-            stockByLocation
-                    .computeIfAbsent(locationId, id -> new HashMap<>())
-                    .put(productId, stock);
-        }
-
-        for (Map.Entry<UUID, Map<UUID, Stock>> locationEntry
-                : stockByLocation.entrySet()) {
-
-            Map<UUID, Stock> locationStock = locationEntry.getValue();
-            boolean canFulfillOrder = true;
-
-            for (Map.Entry<UUID, Integer> item
-                    : productQuantities.entrySet()) {
-
-                Stock stock = locationStock.get(item.getKey());
-
-                if (stock == null
-                        || stock.getQuantity() < item.getValue()) {
-                    canFulfillOrder = false;
-                    break;
-                }
-            }
-
-            if (canFulfillOrder) {
-                return locationStock.values().iterator().next().getLocation();
-            }
-        }
-
-        throw new IllegalStateException(
-                "No location can fulfill the order with the given items."
-        );
-    }
 
     @Transactional
     public Order createOrder(CreateOrderRequest request) {
@@ -114,9 +64,8 @@ public class OrderService {
                                 + request.getDeliveryAddressId()
                 ));
 
-        //finding a location with sufficient stock
-        Location location =
-                findNearestLocationWithStock(productQuantities);
+        //how products should be allcated to locations based on the strategy
+       List<StockAllocation> allocations = orderStrategy.allocate(productQuantities);
 
         //creating the order
         Order order = new Order();
@@ -127,16 +76,12 @@ public class OrderService {
         order = orderRepository.save(order);
 
         //creating order details and updating stock
-        for (Map.Entry<UUID, Integer> entry
-                : productQuantities.entrySet()) {
+        for (StockAllocation allocation : allocations) {
 
-            UUID productId = entry.getKey();
-            int quantity = entry.getValue();
-
-            Product product = productRepository.findById(productId)
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Product not found with id: " + productId
-                    ));
+            Product product = allocation.product();
+            Location location = allocation.location();
+            int quantity = allocation.quantity();
+            UUID productId = product.getId();
 
             Stock stock = stockRepository
                     .findByProduct_IdAndLocation_Id(
