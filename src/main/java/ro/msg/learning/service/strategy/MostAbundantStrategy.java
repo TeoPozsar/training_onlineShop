@@ -9,7 +9,7 @@ import ro.msg.learning.repository.StockRepository;
 
 import java.util.*;
 
-@Component
+
 @RequiredArgsConstructor
 public class MostAbundantStrategy implements OrderStrategy {
 
@@ -36,35 +36,30 @@ public class MostAbundantStrategy implements OrderStrategy {
                     .add(stock);
         }
 
-        List<StockAllocation> allocations = new ArrayList<>();
+        return productQuantities.entrySet()
+                .stream()
+                .map(item -> {
+                    UUID productId = item.getKey();
+                    int requestedQuantity = item.getValue();
 
-        for (Map.Entry<UUID, Integer> item : productQuantities.entrySet()) {
-            UUID productId = item.getKey();
-            int requestedQuantity = item.getValue();
+                    Stock bestStock = stockByProduct.getOrDefault(productId, Collections.emptyList())
+                            .stream()
+                            .filter(stock -> stock.getQuantity() >= requestedQuantity)
+                            .max(Comparator.comparingInt(Stock::getQuantity))
+                            .orElseThrow(() -> new InsufficientStockException(
+                                    "Insufficient stock for product with id: " + productId
+                            ));
 
-            Stock bestStock = null;
-
-            for (Stock stock : stockByProduct.getOrDefault(productId, Collections.emptyList())) {
-                if (stock.getQuantity() >= requestedQuantity && (bestStock == null || stock.getQuantity() > bestStock.getQuantity())) {
-                    bestStock = stock;
-                }
-
-            }
-
-            if (bestStock == null) {
-                throw new InsufficientStockException(
-                        "No location has enough stock for product: " + productId
-                );
-            }
-
-            allocations.add(new StockAllocation(
-                    bestStock.getLocation(),
-                    bestStock.getProduct(),
-                    requestedQuantity
-            ));
-
-        }
-
-        return allocations;
+                    return new StockAllocation(
+                            bestStock.getLocation(),
+                            bestStock.getProduct(),
+                            requestedQuantity
+                    );
+                })
+                .toList();
     }
 }
+
+
+
+

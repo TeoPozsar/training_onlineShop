@@ -1,27 +1,27 @@
+
 package ro.msg.learning.service.strategy;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 import ro.msg.learning.entity.Location;
 import ro.msg.learning.entity.Stock;
+import ro.msg.learning.exception.InsufficientStockException;
 import ro.msg.learning.repository.StockRepository;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 
-
-
-@Component
 @RequiredArgsConstructor
 public class SingleLocationStrategy implements OrderStrategy {
+
     private final StockRepository stockRepository;
 
     @Override
-    public List<StockAllocation> allocate(Map<UUID, Integer> productQuantities) {
+    public List<StockAllocation> allocate(
+            Map<UUID, Integer> productQuantities) {
 
         List<UUID> productIds = new ArrayList<>(
                 productQuantities.keySet()
@@ -44,47 +44,49 @@ public class SingleLocationStrategy implements OrderStrategy {
                     .put(productId, stock);
         }
 
-        for (Map.Entry<UUID, Map<UUID, Stock>> locationEntry
-                : stockByLocation.entrySet()) {
+        Map<UUID, Stock> selectedLocationStock =
+                stockByLocation.values()
+                        .stream()
+                        .filter(locationStock ->
+                                productQuantities.entrySet()
+                                        .stream()
+                                        .allMatch(item -> {
+                                            Stock stock = locationStock.get(
+                                                    item.getKey()
+                                            );
 
-            Map<UUID, Stock> locationStock = locationEntry.getValue();
-            boolean canFulfillOrder = true;
+                                            return stock != null
+                                                    && stock.getQuantity()
+                                                    >= item.getValue();
+                                        })
+                        )
+                        .findFirst()
+                        .orElseThrow(() ->
+                                new InsufficientStockException(
+                                        "No location can fulfill the order "
+                                                + "with the given items."
+                                )
+                        );
 
-            for (Map.Entry<UUID, Integer> item
-                    : productQuantities.entrySet()) {
+        Location selectedLocation =
+                selectedLocationStock.values()
+                        .iterator()
+                        .next()
+                        .getLocation();
 
-                Stock stock = locationStock.get(item.getKey());
+        return productQuantities.entrySet()
+                .stream()
+                .map(item -> {
+                    Stock stock = selectedLocationStock.get(
+                            item.getKey()
+                    );
 
-                if (stock == null
-                        || stock.getQuantity() < item.getValue()) {
-                    canFulfillOrder = false;
-                    break;
-                }
-            }
-
-            if (canFulfillOrder) {
-
-                Location location = locationStock.values().iterator().next().getLocation();
-
-                List<StockAllocation> allocations = new ArrayList<>();
-                for (Map.Entry<UUID, Integer> item
-                        : productQuantities.entrySet()) {
-                    Stock stock = locationStock.get(item.getKey());
-                    allocations.add(new StockAllocation(
-                            stock.getLocation(),
+                    return new StockAllocation(
+                            selectedLocation,
                             stock.getProduct(),
                             item.getValue()
-                    ));
-                }
-                return allocations;
-
-            }
-        }
-
-            throw new IllegalStateException(
-                    "No location can fulfill the order with the given items."
-            );
-
-
+                    );
+                })
+                .toList();
     }
 }
