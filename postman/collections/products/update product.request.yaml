@@ -1,0 +1,22 @@
+$kind: http-request
+description: ""
+url: http://localhost:8080/api/products/88a25eb2-2de2-4df9-8cdd-ca1542aa305f
+method: PUT
+body:
+  type: json
+  content: "{\r
+
+    \  \"name\": \"Wireless Mini Mouse\",\r
+
+    \  \"description\": \"Ergonomic wireless mouse\",\r
+
+    \  \"price\": 29.99,\r
+
+    \  \"weight\": 0.15,\r
+
+    \  \"imageURL\": \"https://example.com/mouse.jpg\",\r
+
+    \  \"categoryId\": \"7e58d60c-ccdf-4cf7-b23b-b4e8851b3f9f\"\r
+
+    }"
+order: 4000
