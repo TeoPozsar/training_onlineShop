@@ -1,0 +1,30 @@
+$kind: http-request
+description: ""
+url: http://localhost:8080/api/orders
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"userId\": \"eb4e3d6a-c124-491d-ba05-09a24607533c\",\r
+
+    \  \"timeStamp\": \"2026-10-14T10:30:00\",\r
+
+    \  \"deliveryAddressId\": \"fce4f786-f3b8-42be-8fc3-47123549cd45 \",\r
+
+    \  \"orderItems\": [\r
+
+    \    {\r
+
+    \      \"productId\": \"74b4e549-4271-44fa-be27-ee9f6db1618f\",\r
+
+    \      \"quantity\": 1\r
+
+    \    }\r
+
+    \    \r
+
+    \  ]\r
+
+    }"
+order: 1000
