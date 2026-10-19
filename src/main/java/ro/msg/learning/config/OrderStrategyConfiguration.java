@@ -14,9 +14,7 @@ import ro.msg.learning.service.strategy.SingleLocationStrategy;
 public class OrderStrategyConfiguration {
 
     @Bean
-    public OrderStrategy orderStrategy(@Value("${order.strategy}") String strategyName, StockRepository stockRepository) {
-
-        OrderStrategyType strategyType = OrderStrategyType.fromPropertyValue(strategyName);
+    public OrderStrategy orderStrategy(@Value("${order.strategy}") OrderStrategyType strategyType, StockRepository stockRepository) {
 
         return switch (strategyType) {
             case MOST_ABUNDANT -> new MostAbundantStrategy(stockRepository);
