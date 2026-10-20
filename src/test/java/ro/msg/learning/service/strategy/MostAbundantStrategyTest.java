@@ -1,4 +1,3 @@
-
 package ro.msg.learning.service.strategy;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -11,7 +10,9 @@ import ro.msg.learning.entity.Product;
 import ro.msg.learning.entity.Stock;
 import ro.msg.learning.exception.InsufficientStockException;
 import ro.msg.learning.repository.StockRepository;
+import ro.msg.learning.util.TestData;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -37,39 +38,25 @@ class MostAbundantStrategyTest {
     void setUp() {
         mostAbundantStrategy = new MostAbundantStrategy(stockRepository);
 
-        productId = UUID.randomUUID();
+        product = TestData.createProductWithId(
+                "laptop",
+                "A high-performance laptop",
+                new BigDecimal("1500.00"),
+                null
+        );
+        productId = product.getId();
 
-        product = new Product();
-        product.setId(productId);
-        product.setName("laptop");
-
-        location1 = new Location();
-        location1.setId(UUID.randomUUID());
-
-        location2 = new Location();
-        location2.setId(UUID.randomUUID());
-    }
-
-    private Stock createStock(
-            Product product,
-            Location location,
-            int quantity
-    ) {
-        Stock stock = new Stock();
-        stock.setProduct(product);
-        stock.setLocation(location);
-        stock.setQuantity(quantity);
-        return stock;
+        location1 = TestData.createLocationWithId("Warehouse 1", null);
+        location2 = TestData.createLocationWithId("Warehouse 2", null);
     }
 
     @Test
     void allocate_WhenMultipleStocksAvailable_SelectsLocationWithHighestQuantity() {
-        Stock stock1 = createStock(product, location1, 10);
-        Stock stock2 = createStock(product, location2, 20);
-        Stock stock3 = createStock(product, location1, 5);
+        Stock stock1 = TestData.createStock(product, location1, 10);
+        Stock stock2 = TestData.createStock(product, location2, 20);
+        Stock stock3 = TestData.createStock(product, location1, 5);
 
-        when(stockRepository
-                .findByProduct_IdInOrderByLocation_IdAsc(anyList()))
+        when(stockRepository.findByProduct_IdInOrderByLocation_IdAsc(anyList()))
                 .thenReturn(List.of(stock1, stock2, stock3));
 
         List<StockAllocation> allocation =
@@ -86,11 +73,10 @@ class MostAbundantStrategyTest {
 
     @Test
     void allocate_WhenInsufficientStock_ThrowsException() {
-        Stock stock1 = createStock(product, location1, 5);
-        Stock stock2 = createStock(product, location2, 3);
+        Stock stock1 = TestData.createStock(product, location1, 5);
+        Stock stock2 = TestData.createStock(product, location2, 3);
 
-        when(stockRepository
-                .findByProduct_IdInOrderByLocation_IdAsc(anyList()))
+        when(stockRepository.findByProduct_IdInOrderByLocation_IdAsc(anyList()))
                 .thenReturn(List.of(stock1, stock2));
 
         assertThrows(
@@ -101,18 +87,20 @@ class MostAbundantStrategyTest {
 
     @Test
     void allocate_WhenProductsComeFromDifferentLocations_AllocatesEachProduct() {
-        Product product2 = new Product();
-        UUID product2Id = UUID.randomUUID();
-        product2.setId(product2Id);
-        product2.setName("phone");
+        Product product2 = TestData.createProductWithId(
+                "phone",
+                "A smartphone",
+                new BigDecimal("800.00"),
+                null
+        );
+        UUID product2Id = product2.getId();
 
-        Stock laptopStock1 = createStock(product, location1, 10);
-        Stock laptopStock2 = createStock(product, location2, 15);
-        Stock phoneStock1 = createStock(product2, location1, 5);
-        Stock phoneStock2 = createStock(product2, location2, 20);
+        Stock laptopStock1 = TestData.createStock(product, location1, 10);
+        Stock laptopStock2 = TestData.createStock(product, location2, 15);
+        Stock phoneStock1 = TestData.createStock(product2, location1, 5);
+        Stock phoneStock2 = TestData.createStock(product2, location2, 20);
 
-        when(stockRepository
-                .findByProduct_IdInOrderByLocation_IdAsc(anyList()))
+        when(stockRepository.findByProduct_IdInOrderByLocation_IdAsc(anyList()))
                 .thenReturn(List.of(
                         laptopStock1,
                         laptopStock2,
@@ -145,8 +133,7 @@ class MostAbundantStrategyTest {
 
     @Test
     void allocate_WhenProductHasNoStock_ThrowsException() {
-        when(stockRepository
-                .findByProduct_IdInOrderByLocation_IdAsc(anyList()))
+        when(stockRepository.findByProduct_IdInOrderByLocation_IdAsc(anyList()))
                 .thenReturn(List.of());
 
         assertThrows(

@@ -14,18 +14,26 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+
+import tools.jackson.databind.ObjectMapper;
+
 import ro.msg.learning.dto.CreateOrderRequest;
 import ro.msg.learning.dto.OrderItemRequest;
 import ro.msg.learning.entity.Address;
 import ro.msg.learning.entity.Location;
-import ro.msg.learning.entity.Order;
 import ro.msg.learning.entity.Product;
 import ro.msg.learning.entity.ProductCategory;
 import ro.msg.learning.entity.Stock;
 import ro.msg.learning.entity.User;
 import ro.msg.learning.enums.Role;
-import ro.msg.learning.exception.InsufficientStockException;
 import ro.msg.learning.repository.AddressRepository;
+import ro.msg.learning.repository.LocationRepository;
 import ro.msg.learning.repository.OrderDetailRepository;
 import ro.msg.learning.repository.OrderRepository;
 import ro.msg.learning.repository.ProductCategoryRepository;
@@ -34,6 +42,7 @@ import ro.msg.learning.repository.StockRepository;
 import ro.msg.learning.repository.UserRepository;
 import ro.msg.learning.service.strategy.OrderStrategy;
 import ro.msg.learning.service.strategy.SingleLocationStrategy;
+import ro.msg.learning.util.TestData;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -45,7 +54,14 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @ActiveProfiles("test")
 @Testcontainers
+@AutoConfigureMockMvc
 public class OrderIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Container
     public static PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer("postgres:17");
@@ -67,11 +83,6 @@ public class OrderIntegrationTest {
         }
     }
 
-    @Autowired
-    private OrderService orderService;
-
-    @Autowired
-    private UserRepository userRepository;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -83,10 +94,17 @@ public class OrderIntegrationTest {
     private ProductRepository productRepository;
 
     @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
     private StockRepository stockRepository;
 
     @Autowired
     private OrderRepository orderRepository;
+
+
+    @Autowired
+    private LocationRepository locationRepository;
 
     @Autowired
     private OrderDetailRepository orderDetailRepository;
@@ -99,69 +117,33 @@ public class OrderIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        orderDetailRepository.deleteAll();
-        orderRepository.deleteAll();
-        stockRepository.deleteAll();
-        productRepository.deleteAll();
-        productCategoryRepository.deleteAll();
-        locationRepository.deleteAll();
-        addressRepository.deleteAll();
-        userRepository.deleteAll();
+        databaseCleanup();
 
         // Create the user
-        user = new User();
-        user.setFirstName("Test");
-        user.setLastName("User");
-        user.setUsername("testuser");
-        user.setEmail("testuser@example.com");
-        user.setPasswordHash("test-password");
-        user.setRole(Role.USER);
+        user = TestData.createUser("testuser", "testuser@example.com", "Test", "User", "test-password", Role.USER);
         user = userRepository.save(user);
 
         // Create the delivery address
-        deliveryAddress = new Address();
-        deliveryAddress.setCountry("Romania");
-        deliveryAddress.setCity("Timisoara");
-        deliveryAddress.setCounty("Timis");
-        deliveryAddress.setStreet("Test Street 1");
+        deliveryAddress = TestData.createDeliveryAddress("USA", "New York", "New York County", "123 Main St");
         deliveryAddress = addressRepository.save(deliveryAddress);
 
         // Create a location
-        location = new Location();
-        location.setName("Test Warehouse");
-        location.setAddress(deliveryAddress);
-        location = saveLocation(location);
+        location = TestData.createLocation("Warehouse 1", deliveryAddress);
+        location = locationRepository.save(location);
 
         // Create a product category
-        ProductCategory category = new ProductCategory();
-        category.setName("Electronics");
-        category.setDescription("Electronic products");
+        ProductCategory category = TestData.createProductCategory("Electronics", "Electronic products");
         category = productCategoryRepository.save(category);
 
         // Create a product
-        product = new Product();
-        product.setName("Laptop");
-        product.setDescription("Test laptop");
-        product.setPrice(new BigDecimal("1000.00"));
-        product.setWeight(2.5);
-        product.setCategory(category);
-        product.setImageURL("laptop.jpg");
+        product = TestData.createProduct("Laptop", "A high-performance laptop", new BigDecimal("1500.00"), category);
         product = productRepository.save(product);
 
         // Create stock for the product at the location
-        stock = new Stock();
-        stock.setProduct(product);
-        stock.setLocation(location);
-        stock.setQuantity(10);
+        stock = TestData.createStock(product, location, 10);
         stock = stockRepository.save(stock);
-    }
 
-    private Location saveLocation(Location location) {
-        return locationRepository.save(location);
     }
-
-    @Autowired
-    private ro.msg.learning.repository.LocationRepository locationRepository;
 
     private CreateOrderRequest createRequest(int quantity) {
         OrderItemRequest item = OrderItemRequest.builder()
@@ -178,23 +160,26 @@ public class OrderIntegrationTest {
     }
 
     @Test
-    void createOrder_WhenStockIsSufficient_DeductsStock() {
-        Order createdOrder = orderService.createOrder(createRequest(5));
+    void createOrder_WhenStockIsSufficient_DeductsStock() throws Exception {
+        mockMvc.perform(post("/api/orders")
+                        .contentType(APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createRequest(5))))
+                .andExpect(status().isCreated());
 
-        assertNotNull(createdOrder.getId());
-        assertEquals(user.getId(), createdOrder.getUser().getId());
-        assertEquals(deliveryAddress.getId(), createdOrder.getAddress().getId());
+        Stock updatedStock = stockRepository
+                .findByProduct_IdAndLocation_Id(
+                        product.getId(), location.getId())
+                .orElseThrow();
 
-        Stock updatedStock = stockRepository.findByProduct_IdAndLocation_Id(product.getId(), location.getId()).orElseThrow();
         assertEquals(5, updatedStock.getQuantity());
     }
 
     @Test
-    void createOrder_WhenStockIsInsufficient_ThrowsExceptionAndRollsBack() {
-        assertThrows(
-                InsufficientStockException.class,
-                () -> orderService.createOrder(createRequest(20))
-        );
+    void createOrder_WhenStockIsInsufficient_ReturnsErrorAndRollsBack() throws Exception {
+        mockMvc.perform(post("/api/orders")
+                        .contentType(APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createRequest(20))))
+                .andExpect(status().isConflict());
 
         assertEquals(0, orderRepository.count());
         assertEquals(0, orderDetailRepository.count());
@@ -207,6 +192,17 @@ public class OrderIntegrationTest {
                 .orElseThrow();
 
         assertEquals(10, unchangedStock.getQuantity());
+    }
+
+    private void databaseCleanup() {
+        orderDetailRepository.deleteAll();
+        orderRepository.deleteAll();
+        stockRepository.deleteAll();
+        productRepository.deleteAll();
+        productCategoryRepository.deleteAll();
+        locationRepository.deleteAll();
+        addressRepository.deleteAll();
+        userRepository.deleteAll();
     }
 
 }
