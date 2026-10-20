@@ -120,7 +120,7 @@ public class OrderIntegrationTest {
         databaseCleanup();
 
         // Create the user
-        user = TestData.createUser("testuser", "testuser@example.com", "Test", "User", "test-password", Role.USER);
+        user = TestData.createUser("testuser", "testuser@example.com", "Test", "User", "test-password", Role.CUSTOMER);
         user = userRepository.save(user);
 
         // Create the delivery address
