@@ -27,10 +27,10 @@ public class CustomUserDetailsService implements UserDetailsService {
                         "User not found: " + username
                 ));
 
-        return org.springframework.security.core.userdetails.User
-                .withUsername(user.getUsername())
-                .password(user.getPasswordHash())
-                .roles(user.getRole().name())
-                .build();
+        return UserDetailsMapper.toUserDetails(
+                user.getUsername(),
+                user.getPasswordHash(),
+                user.getRole().name()
+        );
     }
 }
