@@ -37,3 +37,7 @@ build/
 mvnw
 mvnw.cmd
 .mvn/
+
+# RSA keys - generated locally
+keys/
+keys/private.pem

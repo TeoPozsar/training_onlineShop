@@ -114,4 +114,15 @@ public class OrderService {
 
         return order;
     }
+
+    @Transactional
+    public void deleteOrder(UUID orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Order not found with id: " + orderId
+                ));
+
+        orderDetailRepository.deleteByOrder_Id(orderId);
+        orderRepository.delete(order);
+    }
 }
