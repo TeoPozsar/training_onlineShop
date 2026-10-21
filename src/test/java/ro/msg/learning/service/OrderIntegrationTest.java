@@ -16,6 +16,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -162,6 +163,7 @@ public class OrderIntegrationTest {
     @Test
     void createOrder_WhenStockIsSufficient_DeductsStock() throws Exception {
         mockMvc.perform(post("/api/orders")
+                        .with(user("testuser").roles("CUSTOMER"))
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest(5))))
                 .andExpect(status().isCreated());
@@ -177,6 +179,7 @@ public class OrderIntegrationTest {
     @Test
     void createOrder_WhenStockIsInsufficient_ReturnsErrorAndRollsBack() throws Exception {
         mockMvc.perform(post("/api/orders")
+                        .with(user("testuser").roles("CUSTOMER"))
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest(20))))
                 .andExpect(status().isConflict());

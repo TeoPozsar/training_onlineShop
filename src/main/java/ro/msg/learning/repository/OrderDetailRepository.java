@@ -7,4 +7,6 @@ import ro.msg.learning.entity.OrderDetailId;
 import java.util.UUID;
 
 public interface OrderDetailRepository extends JpaRepository<OrderDetail, OrderDetailId> {
+
+    void deleteByOrder_Id(java.util.UUID orderId);
 }

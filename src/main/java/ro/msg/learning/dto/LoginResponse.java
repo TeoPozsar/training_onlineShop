@@ -1,4 +1,4 @@
 package ro.msg.learning.dto;
 
-public class LoginResponse {
+public record LoginResponse(String token) {
 }

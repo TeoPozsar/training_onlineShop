@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import ro.msg.learning.dto.CreateOrderRequest;
 import ro.msg.learning.entity.Order;
 import ro.msg.learning.service.OrderService;
+import org.springframework.security.access.prepost.PreAuthorize;
+import java.util.UUID;
 
 @RestController
 @RequestMapping
@@ -20,6 +22,13 @@ public class OrderController {
     public ResponseEntity<Order> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         Order order = orderService.createOrder(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(order);
+    }
+
+    @DeleteMapping("/api/orders/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteOrder(@PathVariable UUID id) {
+        orderService.deleteOrder(id);
+        return ResponseEntity.noContent().build();
     }
 
 
